@@ -62,8 +62,6 @@ for e in code98:
 
 OUT_JSON.write_text(json.dumps({"events": selected, "edges": edges}, indent=2))
 
-avg_lat = sum(e["lat"] for e in selected) / len(selected)
-avg_lon = sum(e["lon"] for e in selected) / len(selected)
 max_edge_distance = math.ceil(max(e["distance_km"] for e in edges))
 default_distance = max_edge_distance
 overlay_src = OVERLAY_IMAGE.name
@@ -98,7 +96,7 @@ html = f"""<!doctype html>
 <script src=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.js\"></script>
 <script>
 const payload = {json.dumps({'events': selected, 'edges': edges})};
-const map = L.map('map').setView([{avg_lat}, {avg_lon}], 5);
+const map = L.map('map').setView([45, -94], 5);
 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
   maxZoom: 19,
   attribution: '&copy; OpenStreetMap contributors'
