@@ -37,6 +37,7 @@ for f in features:
         {
             "id": props.get("id"),
             "name": props.get("EventShortName") or props.get("eventname"),
+            "eventname": props.get("eventname"),
             "countrycode": code,
             "lat": lat,
             "lon": lon,
@@ -126,7 +127,7 @@ function renderEdges(limitKm) {{
 for (const e of payload.events) {{
   const color = e.countrycode === 14 ? '#1f77b4' : '#d62728';
   L.circleMarker([e.lat, e.lon], {{ radius: 4, color, fillOpacity: 0.9 }})
-    .bindPopup(`${{e.name}}`)
+    .bindPopup(`<a href='https://parkrun.${{e.countrycode === 14 ? 'ca' : 'us'}}/${{e.eventname}}'>${{e.name}}</a>`)
     .addTo(map);
 }}
 
