@@ -63,7 +63,7 @@ for e in code98:
 OUT_JSON.write_text(json.dumps({"events": selected, "edges": edges}, indent=2))
 
 max_edge_distance = math.ceil(max(e["distance_km"] for e in edges))
-default_distance = max_edge_distance
+default_distance = 700
 overlay_src = OVERLAY_IMAGE.name
 
 html = f"""<!doctype html>
