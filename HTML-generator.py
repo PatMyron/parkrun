@@ -4,8 +4,8 @@ import urllib.request
 from pathlib import Path
 
 URL = "https://images.parkrun.com/events.json"
-OUT_HTML = Path("parkrun_country14_98_nearest_map.html")
-OUT_JSON = Path("parkrun_country14_98_filtered.json")
+OUT_HTML = Path("parkrun_map.html")
+OUT_JSON = Path("parkrun_filtered.json")
 OVERLAY_IMAGE = Path("canada_usa_parkrun.png")
 
 
@@ -71,7 +71,7 @@ html = f"""<!doctype html>
 <html>
 <head>
   <meta charset=\"utf-8\" />
-  <title>parkrun countrycode 14/98 nearest-neighbor map</title>
+  <title>parkrun nearest-neighbor map</title>
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
   <link rel=\"stylesheet\" href=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.css\" />
   <style>
@@ -116,7 +116,7 @@ function renderEdges(limitKm) {{
       [edge.from.lat, edge.from.lon],
       [edge.to.lat, edge.to.lon]
     ], {{color, weight: 2, opacity: 0.65}})
-    .bindTooltip(`${{edge.direction}}: ${{edge.from.name}} -> ${{edge.to.name}} (${{edge.distance_km.toFixed(1)}} km)`)
+    .bindTooltip(`${{edge.from.name}} -> ${{edge.to.name}} (${{edge.distance_km.toFixed(0)}} km)`)
     .addTo(edgeLayer);
   }}
   document.getElementById('edgeCount').textContent = String(visible);
@@ -126,7 +126,7 @@ function renderEdges(limitKm) {{
 for (const e of payload.events) {{
   const color = e.countrycode === 14 ? '#1f77b4' : '#d62728';
   L.circleMarker([e.lat, e.lon], {{ radius: 4, color, fillOpacity: 0.9 }})
-    .bindPopup(`${{e.name}} (countrycode ${{e.countrycode}})`)
+    .bindPopup(`${{e.name}}`)
     .addTo(map);
 }}
 
@@ -134,7 +134,7 @@ const controls = L.control({{position: 'topright'}});
 controls.onAdd = function() {{
   const div = L.DomUtil.create('div', 'controls');
   div.innerHTML = `
-    <div><b>Max edge distance</b></div>
+    <div><b>Max distance</b></div>
     <input id="distanceSlider" type="range" min="1" max="{max_edge_distance}" value="{default_distance}" step="1" />
     <div><span id="distanceValue">{default_distance} km</span></div>
     <div>Visible edges: <span id="edgeCount">0</span> / ${{payload.edges.length}}</div>
@@ -153,10 +153,10 @@ legend.onAdd = function() {{
   const div = L.DomUtil.create('div', 'legend');
   div.innerHTML = `
     <div><b>Legend</b></div>
-    <div><span style=\"color:#1f77b4\">●</span> countrycode 14</div>
-    <div><span style=\"color:#d62728\">●</span> countrycode 98</div>
-    <div><span style=\"color:#1f77b4\">━</span> edge 14→nearest 98</div>
-    <div><span style=\"color:#d62728\">━</span> edge 98→nearest 14</div>
+    <div><span style=\"color:#1f77b4\">●</span> 🇨🇦 CA</div>
+    <div><span style=\"color:#d62728\">●</span> 🇺🇸 US</div>
+    <div><span style=\"color:#1f77b4\">━</span> 🇨🇦 CA ➡️ closest 🇺🇸 US</div>
+    <div><span style=\"color:#d62728\">━</span> 🇺🇸 US ➡️ closest 🇨🇦 CA</div>
   `;
   return div;
 }};
@@ -176,11 +176,8 @@ imageControl.addTo(map);
 """
 OUT_HTML.write_text(html)
 
-print(f"Selected events: {len(selected)} (country 14: {len(code14)}, country 98: {len(code98)})")
-print(f"Edges: {len(edges)}")
-print(f"Map saved to {OUT_HTML}")
-print(f"Filtered data saved to {OUT_JSON}")
+print(f"Events: {len(selected)} (🇨🇦 CA: {len(code14)}, 🇺🇸 US: {len(code98)})")
 if not OVERLAY_IMAGE.exists():
     print(
-        f"Overlay image not found at {OVERLAY_IMAGE}. Put the provided image there so it appears in the map's bottom-left corner."
+        f"Overlay image not found at {OVERLAY_IMAGE}"
     )
