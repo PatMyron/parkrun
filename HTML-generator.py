@@ -71,6 +71,7 @@ html = f"""<!doctype html>
 <head>
   <meta charset=\"utf-8\" />
   <title>parkrun map for Canada Day + Thanksgiving</title>
+  <meta property="og:image" content="https://patmyron.com/parkrun/screenshot.png" />
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
   <link rel=\"stylesheet\" href=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.css\" />
   <style>
