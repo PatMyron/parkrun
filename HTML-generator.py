@@ -4,7 +4,7 @@ import urllib.request
 from pathlib import Path
 
 URL = "https://images.parkrun.com/events.json"
-OUT_HTML = Path("parkrun_map.html")
+OUT_HTML = Path("holidays.html")
 OUT_JSON = Path("parkrun_filtered.json")
 OVERLAY_IMAGE = Path("canada_usa_parkrun.png")
 
