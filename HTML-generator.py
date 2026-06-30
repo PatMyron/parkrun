@@ -152,8 +152,8 @@ legend.onAdd = function() {{
   const div = L.DomUtil.create('div', 'legend');
   div.innerHTML = `
     <div><b>Legend</b></div>
-    <div><span style=\"color:#1f77b4\">●</span> 🇨🇦 CA</div>
-    <div><span style=\"color:#d62728\">●</span> 🇺🇸 US</div>
+    <div><span style=\"color:#1f77b4\">●</span> 🇨🇦 <a href='https://parkrun.ca/special-events/'>CA</a></div>
+    <div><span style=\"color:#d62728\">●</span> 🇺🇸 <a href='https://parkrun.us/special-events/'>US</a></div>
     <div><span style=\"color:#1f77b4\">━</span> 🇨🇦 CA ➡️ closest 🇺🇸 US</div>
     <div><span style=\"color:#d62728\">━</span> 🇺🇸 US ➡️ closest 🇨🇦 CA</div>
   `;
