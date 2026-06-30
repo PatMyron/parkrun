@@ -164,7 +164,7 @@ legend.addTo(map);
 const imageControl = L.control({{position: 'bottomleft'}});
 imageControl.onAdd = function() {{
   const div = L.DomUtil.create('div', 'corner-image-wrapper');
-  div.innerHTML = `<img src="{overlay_src}" alt="Canada & USA parkrun Canada Day & Thanksgiving 5Ks" />`;
+  div.innerHTML = `<img src="{overlay_src}" alt="Canada & USA parkrun Canada Day & Thanksgiving 5Ks" width="125"/>`;
   L.DomEvent.disableClickPropagation(div);
   return div;
 }};
