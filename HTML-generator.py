@@ -70,7 +70,7 @@ html = f"""<!doctype html>
 <html>
 <head>
   <meta charset=\"utf-8\" />
-  <title>parkrun nearest-neighbor map</title>
+  <title>parkrun map for Canada Day + Thanksgiving</title>
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
   <link rel=\"stylesheet\" href=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.css\" />
   <style>
