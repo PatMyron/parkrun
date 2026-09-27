@@ -7,6 +7,29 @@ URL = "https://images.parkrun.com/events.json"
 OUT_HTML = Path("holidays.html")
 OUT_JSON = Path("parkrun_filtered.json")
 OVERLAY_IMAGE = Path("canada_usa_parkrun.png")
+RADIUS_KM = 25
+RADIUS_CENTERS = [
+    (43.676740, -79.408337),
+    (45.512702, -73.582362),
+    (49.259956, -123.061879),
+    (40.731181, -73.997553),
+    (34.049810, -118.250016),
+    (41.872953, -87.665591),
+    (32.780783, -96.798530),
+    (29.757309, -95.364398),
+    (33.762106, -84.388197),
+    (38.894018, -77.037191),
+    (25.763978, -80.199314),
+    (39.954138, -75.178592),
+    (33.449506, -112.075090),
+    (42.354348, -71.073016),
+    (37.570236, -122.168374),
+    (42.350893, -83.098657),
+    (47.622912, -122.330954),
+    (44.962823, -93.193478),
+    (27.912593, -82.567259),
+    (32.723967, -117.144634),
+]
 
 
 def haversine_km(lat1, lon1, lat2, lon2):
@@ -105,6 +128,20 @@ L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
 
 const edgeLayer = L.layerGroup().addTo(map);
 
+const radiusLayer = L.layerGroup().addTo(map);
+for (const [lat, lon] of {json.dumps(RADIUS_CENTERS)}) {{
+  L.circle([lat, lon], {{
+    radius: {RADIUS_KM * 1000},
+    color: '#6a3d9a',
+    weight: 2,
+    opacity: 0.8,
+    fillColor: '#6a3d9a',
+    fillOpacity: 0.08,
+  }})
+  .bindTooltip('{RADIUS_KM} km radius')
+  .addTo(radiusLayer);
+}}
+
 function renderEdges(limitKm) {{
   edgeLayer.clearLayers();
   let visible = 0;
@@ -157,6 +194,7 @@ legend.onAdd = function() {{
     <div><span style=\"color:#d62728\">●</span> 🇺🇸 <a href='https://parkrun.us/special-events/'>US</a></div>
     <div><span style=\"color:#1f77b4\">━</span> 🇨🇦 CA ➡️ closest 🇺🇸 US</div>
     <div><span style=\"color:#d62728\">━</span> 🇺🇸 US ➡️ closest 🇨🇦 CA</div>
+    <div><span style=\"color:#6a3d9a\">◯</span> {RADIUS_KM} km radius</div>
   `;
   return div;
 }};
