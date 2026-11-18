@@ -1,13 +1,19 @@
 import json
 import math
 import sys
-import urllib.request
 from html.parser import HTMLParser
-from http.client import HTTPException
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import requests
+
 URL = "https://images.parkrun.com/events.json"
+USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
+)
+REQUEST_HEADERS = {"User-Agent": USER_AGENT}
+REQUEST_TIMEOUT = 15
 OUT_HTML = Path("holidays.html")
 OUT_JSON = Path("parkrun_filtered.json")
 OVERLAY_IMAGE = Path("canada_usa_parkrun.png")
@@ -68,15 +74,14 @@ class SpecialEventDeclarations(HTMLParser):
 
 def confirmed_special_events(url, holiday_tag):
     try:
-        with urllib.request.urlopen(url, timeout=15) as response:
-            charset = response.headers.get_content_charset() or "utf-8"
-            page = response.read().decode(charset, errors="replace")
-    except (OSError, HTTPException, LookupError) as error:
+        response = requests.get(url, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+    except requests.RequestException as error:
         print(f"Unable to load {url}: {error}", file=sys.stderr)
         return set()
 
     declarations = SpecialEventDeclarations(urlsplit(url).hostname, holiday_tag)
-    declarations.feed(page)
+    declarations.feed(response.text)
     declarations.close()
     return declarations.eventnames
 
@@ -91,8 +96,9 @@ def haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
-with urllib.request.urlopen(URL) as resp:
-    data = json.load(resp)
+response = requests.get(URL, headers=REQUEST_HEADERS, timeout=REQUEST_TIMEOUT)
+response.raise_for_status()
+data = response.json()
 
 features = data["events"]["features"]
 selected = []
