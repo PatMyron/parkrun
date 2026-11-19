@@ -9,7 +9,6 @@ import requests
 
 URL = "https://images.parkrun.com/events.json"
 USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
-REQUEST_TIMEOUT = 15
 OUT_HTML = Path("holidays.html")
 OUT_JSON = Path("parkrun_filtered.json")
 OVERLAY_IMAGE = Path("canada_usa_parkrun.png")
@@ -70,7 +69,7 @@ class SpecialEventDeclarations(HTMLParser):
 
 def confirmed_special_events(url, holiday_tag):
     try:
-        response = requests.get(url, headers={'User-Agent': USER_AGENT}, timeout=REQUEST_TIMEOUT)
+        response = requests.get(url, headers={'User-Agent': USER_AGENT})
         response.raise_for_status()
     except requests.RequestException as error:
         print(f"Unable to load {url}: {error}", file=sys.stderr)
@@ -92,7 +91,7 @@ def haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
-response = requests.get(URL, headers={'User-Agent': USER_AGENT}, timeout=REQUEST_TIMEOUT)
+response = requests.get(URL, headers={'User-Agent': USER_AGENT})
 response.raise_for_status()
 data = response.json()
 
