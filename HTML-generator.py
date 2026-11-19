@@ -12,9 +12,10 @@ USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36
 OUT_HTML = Path("holidays.html")
 OUT_JSON = Path("parkrun_filtered.json")
 OVERLAY_IMAGE = Path("canada_usa_parkrun.png")
+SPECIAL_EVENTS_DIR = Path(__file__).resolve().with_name("special-events")
 SPECIAL_EVENTS = {
-    14: ("https://parkrun.ca/special-events/", "canadaday", "Canada Day", "🇨🇦"),
-    98: ("https://parkrun.us/special-events/", "thanksgiving", "Thanksgiving", "🦃"),
+    14: ("ca", "canadaday", "Canada Day", "🇨🇦"),
+    98: ("us", "thanksgiving", "Thanksgiving", "🦃"),
 }
 
 
@@ -67,16 +68,16 @@ class SpecialEventDeclarations(HTMLParser):
             self.eventname = None
 
 
-def confirmed_special_events(url, holiday_tag):
+def confirmed_special_events(country, holiday_tag):
+    snapshot = SPECIAL_EVENTS_DIR / f"{country}.html"
     try:
-        response = requests.get(url, headers={'User-Agent': USER_AGENT})
-        response.raise_for_status()
-    except requests.RequestException as error:
-        print(f"Unable to load {url}: {error}", file=sys.stderr)
+        page = snapshot.read_text(encoding="utf-8-sig")
+    except (OSError, UnicodeError) as error:
+        print(f"Unable to read {snapshot}: {error}", file=sys.stderr)
         return set()
 
-    declarations = SpecialEventDeclarations(urlsplit(url).hostname, holiday_tag)
-    declarations.feed(response.text)
+    declarations = SpecialEventDeclarations(f"parkrun.{country}", holiday_tag)
+    declarations.feed(page)
     declarations.close()
     return declarations.eventnames
 
@@ -123,8 +124,8 @@ if not code14 or not code98:
     raise RuntimeError("No events left in one or both groups after filtering.")
 
 holidays = {}
-for code, (url, holiday_tag, name, icon) in SPECIAL_EVENTS.items():
-    confirmed = confirmed_special_events(url, holiday_tag)
+for code, (country, holiday_tag, name, icon) in SPECIAL_EVENTS.items():
+    confirmed = confirmed_special_events(country, holiday_tag)
     eventnames = [
         event["eventname"]
         for event in selected
