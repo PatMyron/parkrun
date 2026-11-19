@@ -1,12 +1,84 @@
 import json
 import math
-import urllib.request
+import sys
+from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urlsplit
+
+import requests
 
 URL = "https://images.parkrun.com/events.json"
+USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36'
 OUT_HTML = Path("holidays.html")
 OUT_JSON = Path("parkrun_filtered.json")
 OVERLAY_IMAGE = Path("canada_usa_parkrun.png")
+SPECIAL_EVENTS = {
+    14: ("https://parkrun.ca/special-events/", "canadaday", "Canada Day", "🇨🇦"),
+    98: ("https://parkrun.us/special-events/", "thanksgiving", "Thanksgiving", "🦃"),
+}
+
+
+class SpecialEventDeclarations(HTMLParser):
+    def __init__(self, domain, holiday_tag):
+        super().__init__()
+        self.hosts = {domain, f"www.{domain}"}
+        self.holiday_tag = holiday_tag
+        self.eventnames = set()
+        self.in_row = False
+        self.eventname = None
+        self.link_text = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "tr":
+            self.in_row = True
+            self.eventname = None
+        if tag != "a" or not self.in_row:
+            return
+
+        self.eventname = None
+        href = dict(attrs).get("href")
+        if not href:
+            return
+        try:
+            url = urlsplit(href)
+        except ValueError:
+            return
+        if url.scheme not in {"", "https", "http"} or (
+            url.netloc and url.hostname not in self.hosts
+        ):
+            return
+
+        parts = url.path.strip("/").split("/")
+        if len(parts) == 4 and parts[1:] == ["news", "tag", self.holiday_tag]:
+            self.eventname = parts[0]
+            self.link_text = []
+
+    def handle_data(self, data):
+        if self.eventname:
+            self.link_text.append(data)
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self.eventname:
+            if "".join(self.link_text).strip() == "✅":
+                self.eventnames.add(self.eventname)
+            self.eventname = None
+        if tag == "tr":
+            self.in_row = False
+            self.eventname = None
+
+
+def confirmed_special_events(url, holiday_tag):
+    try:
+        response = requests.get(url, headers={'User-Agent': USER_AGENT})
+        response.raise_for_status()
+    except requests.RequestException as error:
+        print(f"Unable to load {url}: {error}", file=sys.stderr)
+        return set()
+
+    declarations = SpecialEventDeclarations(urlsplit(url).hostname, holiday_tag)
+    declarations.feed(response.text)
+    declarations.close()
+    return declarations.eventnames
 
 
 def haversine_km(lat1, lon1, lat2, lon2):
@@ -19,8 +91,9 @@ def haversine_km(lat1, lon1, lat2, lon2):
     return 2 * r * math.asin(math.sqrt(a))
 
 
-with urllib.request.urlopen(URL) as resp:
-    data = json.load(resp)
+response = requests.get(URL, headers={'User-Agent': USER_AGENT})
+response.raise_for_status()
+data = response.json()
 
 features = data["events"]["features"]
 selected = []
@@ -48,6 +121,17 @@ code14 = [e for e in selected if e["countrycode"] == 14]
 code98 = [e for e in selected if e["countrycode"] == 98]
 if not code14 or not code98:
     raise RuntimeError("No events left in one or both groups after filtering.")
+
+holidays = {}
+for code, (url, holiday_tag, name, icon) in SPECIAL_EVENTS.items():
+    confirmed = confirmed_special_events(url, holiday_tag)
+    eventnames = [
+        event["eventname"]
+        for event in selected
+        if event["countrycode"] == code and event["eventname"] in confirmed
+    ]
+    if eventnames:
+        holidays[code] = {"name": name, "icon": icon, "eventnames": eventnames}
 
 edges = []
 for e in code14:
@@ -79,6 +163,7 @@ html = f"""<!doctype html>
     .legend, .controls {{ background: white; padding: 8px; line-height: 1.4; border-radius: 4px; }}
     .controls {{ min-width: 240px; }}
     .controls input {{ width: 100%; }}
+    .holiday-marker {{ font-size: 24px; line-height: 28px; text-align: center; }}
     .corner-image-wrapper {{
       background: white;
       padding: 6px;
@@ -97,6 +182,7 @@ html = f"""<!doctype html>
 <script src=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.js\"></script>
 <script>
 const payload = {json.dumps({'events': selected, 'edges': edges})};
+const holidays = {json.dumps(holidays)};
 const map = L.map('map').setView([45, -94], 5);
 L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
   maxZoom: 19,
@@ -125,7 +211,19 @@ function renderEdges(limitKm) {{
 
 for (const e of payload.events) {{
   const color = e.countrycode === 14 ? '#1f77b4' : '#d62728';
-  L.circleMarker([e.lat, e.lon], {{ radius: 4, color, fillOpacity: 0.9 }})
+  const holiday = holidays[e.countrycode];
+  const marker = holiday?.eventnames.includes(e.eventname)
+    ? L.marker([e.lat, e.lon], {{
+        title: holiday.name,
+        icon: L.divIcon({{
+          className: 'holiday-marker',
+          html: holiday.icon,
+          iconSize: [28, 28],
+          popupAnchor: [0, -14]
+        }})
+      }})
+    : L.circleMarker([e.lat, e.lon], {{ radius: 4, color, fillOpacity: 0.9 }});
+  marker
     .bindPopup(`<a href='https://parkrun.${{e.countrycode === 14 ? 'ca' : 'us'}}/${{e.eventname}}'>${{e.name}}</a>`)
     .addTo(map);
 }}
@@ -155,6 +253,7 @@ legend.onAdd = function() {{
     <div><b>Legend</b></div>
     <div><span style=\"color:#1f77b4\">●</span> 🇨🇦 <a href='https://parkrun.ca/special-events/'>CA</a></div>
     <div><span style=\"color:#d62728\">●</span> 🇺🇸 <a href='https://parkrun.us/special-events/'>US</a></div>
+    ${{Object.values(holidays).map((holiday) => `<div>${{holiday.icon}} ${{holiday.name}}</div>`).join('')}}
     <div><span style=\"color:#1f77b4\">━</span> 🇨🇦 CA ➡️ closest 🇺🇸 US</div>
     <div><span style=\"color:#d62728\">━</span> 🇺🇸 US ➡️ closest 🇨🇦 CA</div>
   `;
